@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, CircleDollarSign, Building2, LogIn, AlertCircle } from 'lucide-react';
+import { User, CircleDollarSign, Building2, LogIn, AlertCircle, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -12,6 +12,8 @@ export const LoginPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>('entrepreneur');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [otp, setOtp] = useState('');
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -21,13 +23,29 @@ export const LoginPage: React.FC = () => {
     setError(null);
     setIsLoading(true);
     
-    try {
-      await login(email, password, role);
-      // Redirect based on user role
-      navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
-    } catch (err) {
-      setError((err as Error).message);
-      setIsLoading(false);
+    if (step === 1) {
+      // Simulate credential check delay
+      setTimeout(() => {
+        if (!email || !password) {
+           setError("Please enter all fields.");
+           setIsLoading(false);
+           return;
+        }
+        setStep(2);
+        setIsLoading(false);
+      }, 1000);
+    } else {
+      // Step 2 is OTP verification
+      try {
+        if (otp.length < 6) {
+          throw new Error("Invalid verification code");
+        }
+        await login(email, password, role);
+        navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
+      } catch (err) {
+        setError((err as Error).message);
+        setIsLoading(false);
+      }
     }
   };
   
@@ -55,10 +73,10 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to Business Nexus
+          {step === 1 ? 'Sign in to Business Nexus' : 'Two-Factor Authentication'}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Connect with investors and entrepreneurs
+          {step === 1 ? 'Connect with investors and entrepreneurs' : 'Enter the security code sent to your device'}
         </p>
       </div>
 
@@ -72,85 +90,119 @@ export const LoginPage: React.FC = () => {
           )}
           
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                I am a
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  className={`py-3 px-4 border rounded-md flex items-center justify-center transition-colors ${
-                    role === 'entrepreneur'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                  onClick={() => setRole('entrepreneur')}
-                >
-                  <Building2 size={18} className="mr-2" />
-                  Entrepreneur
-                </button>
+            {step === 1 ? (
+              <div className="animate-fade-in space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    I am a
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      className={`py-3 px-4 border rounded-md flex items-center justify-center transition-colors ${
+                        role === 'entrepreneur'
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setRole('entrepreneur')}
+                    >
+                      <Building2 size={18} className="mr-2" />
+                      Entrepreneur
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className={`py-3 px-4 border rounded-md flex items-center justify-center transition-colors ${
+                        role === 'investor'
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setRole('investor')}
+                    >
+                      <CircleDollarSign size={18} className="mr-2" />
+                      Investor
+                    </button>
+                  </div>
+                </div>
                 
-                <button
-                  type="button"
-                  className={`py-3 px-4 border rounded-md flex items-center justify-center transition-colors ${
-                    role === 'investor'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                  onClick={() => setRole('investor')}
-                >
-                  <CircleDollarSign size={18} className="mr-2" />
-                  Investor
-                </button>
-              </div>
-            </div>
-            
-            <Input
-              label="Email address"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              fullWidth
-              startAdornment={<User size={18} />}
-            />
-            
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              fullWidth
-            />
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                <Input
+                  label="Email address"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  fullWidth
+                  startAdornment={<User size={18} />}
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
+                
+                <Input
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  fullWidth
+                />
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                      Remember me
+                    </label>
+                  </div>
 
-              <div className="text-sm">
-                <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
-                  Forgot your password?
-                </a>
+                  <div className="text-sm">
+                    <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
+                      Forgot your password?
+                    </a>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="animate-fade-in space-y-6">
+                <div className="text-center mb-6">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 mb-4">
+                    <ShieldCheck className="h-8 w-8 text-primary-600" aria-hidden="true" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900">Verification Required</h3>
+                  <p className="text-sm text-gray-500 mt-2">
+                    For enhanced protection, please enter the 6-digit verification code. (Hint: enter any 6 characters for demo)
+                  </p>
+                </div>
+
+                <div className="flex justify-center">
+                   <input
+                     type="text"
+                     maxLength={6}
+                     className="w-full text-center text-3xl tracking-[1em] focus:ring-primary-500 focus:border-primary-500 block border-gray-300 rounded-md py-4 bg-gray-50 border transition-colors font-mono"
+                     placeholder="------"
+                     value={otp}
+                     onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                     required
+                   />
+                </div>
+                
+                <div className="text-center text-sm">
+                   <button type="button" onClick={() => setStep(1)} className="text-gray-500 hover:text-gray-900 underline">
+                     Back to login
+                   </button>
+                </div>
+              </div>
+            )}
             
             <Button
               type="submit"
               fullWidth
               isLoading={isLoading}
-              leftIcon={<LogIn size={18} />}
+              leftIcon={step === 1 ? <ArrowRight size={18} /> : <LogIn size={18} />}
             >
-              Sign in
+              {step === 1 ? 'Continue to Verification' : 'Verify & Sign in'}
             </Button>
           </form>
           

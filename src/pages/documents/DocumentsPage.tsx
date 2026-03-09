@@ -3,15 +3,21 @@ import { FileText, Upload, Download, Trash2, Share2 } from 'lucide-react';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { DocumentChamber } from '../../components/documents/DocumentChamber';
+import { useDropzone } from 'react-dropzone';
+import toast, { Toaster } from 'react-hot-toast';
 
-const documents = [
+type DocType = { id: number; name: string; type: string; size: string; lastModified: string; shared: boolean; status?: 'Draft' | 'In Review' | 'Signed' };
+
+const initialDocuments: DocType[] = [
   {
     id: 1,
     name: 'Pitch Deck 2024.pdf',
     type: 'PDF',
     size: '2.4 MB',
     lastModified: '2024-02-15',
-    shared: true
+    shared: true,
+    status: 'In Review'
   },
   {
     id: 2,
@@ -27,7 +33,8 @@ const documents = [
     type: 'Document',
     size: '3.2 MB',
     lastModified: '2024-02-05',
-    shared: true
+    shared: true,
+    status: 'Draft'
   },
   {
     id: 4,
@@ -40,6 +47,49 @@ const documents = [
 ];
 
 export const DocumentsPage: React.FC = () => {
+  const [docs, setDocs] = React.useState<DocType[]>(initialDocuments);
+  const [selectedDoc, setSelectedDoc] = React.useState<DocType | null>(null);
+
+  const handleSignDocument = (docId: number) => {
+    setDocs(prev => prev.map(d => d.id === docId ? { ...d, status: 'Signed' } : d));
+  };
+   
+  const onDrop = React.useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0];
+      const newDoc: DocType = {
+        id: Date.now(),
+        name: file.name,
+        type: file.type.includes('pdf') ? 'PDF' : 'Document',
+        size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+        lastModified: new Date().toISOString().split('T')[0],
+        shared: false,
+        status: 'Draft'
+      };
+      setDocs(prev => [newDoc, ...prev]);
+      toast.success(`${file.name} uploaded successfully!`);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc', '.docx'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+    }
+  });
+
+  if (selectedDoc) {
+    return (
+      <DocumentChamber
+        document={selectedDoc}
+        onClose={() => setSelectedDoc(null)}
+        onSign={handleSignDocument}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -48,11 +98,24 @@ export const DocumentsPage: React.FC = () => {
           <p className="text-gray-600">Manage your startup's important files</p>
         </div>
         
-        <Button leftIcon={<Upload size={18} />}>
-          Upload Document
-        </Button>
+        <div {...getRootProps()} className="cursor-pointer">
+          <input {...getInputProps()} />
+          <Button leftIcon={<Upload size={18} />}>
+            Upload Document
+          </Button>
+        </div>
       </div>
+      <Toaster position="bottom-right" />
       
+      {isDragActive && (
+        <div className="absolute inset-0 z-50 bg-primary-50/90 border-4 border-dashed border-primary-500 rounded-xl flex items-center justify-center backdrop-blur-sm">
+           <div className="text-center">
+             <Upload size={48} className="mx-auto text-primary-600 mb-4 animate-bounce" />
+             <h2 className="text-2xl font-bold text-primary-900">Drop files to upload</h2>
+           </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Storage info */}
         <Card className="lg:col-span-1">
@@ -110,10 +173,11 @@ export const DocumentsPage: React.FC = () => {
             </CardHeader>
             <CardBody>
               <div className="space-y-2">
-                {documents.map(doc => (
+                {docs.map(doc => (
                   <div
                     key={doc.id}
-                    className="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                    className="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors duration-200 cursor-pointer"
+                    onClick={() => setSelectedDoc(doc)}
                   >
                     <div className="p-2 bg-primary-50 rounded-lg mr-4">
                       <FileText size={24} className="text-primary-600" />
@@ -126,6 +190,15 @@ export const DocumentsPage: React.FC = () => {
                         </h3>
                         {doc.shared && (
                           <Badge variant="secondary" size="sm">Shared</Badge>
+                        )}
+                        {doc.status && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            doc.status === 'Signed' ? 'bg-success-100 text-success-700' :
+                            doc.status === 'In Review' ? 'bg-warning-100 text-warning-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {doc.status}
+                          </span>
                         )}
                       </div>
                       

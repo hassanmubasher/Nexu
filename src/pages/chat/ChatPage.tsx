@@ -11,6 +11,7 @@ import { Message } from '../../types';
 import { findUserById } from '../../data/users';
 import { getMessagesBetweenUsers, sendMessage, getConversationsForUser } from '../../data/messages';
 import { MessageCircle } from 'lucide-react';
+import { VideoCallModal } from '../../components/chat/VideoCallModal';
 
 export const ChatPage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -18,6 +19,7 @@ export const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [conversations, setConversations] = useState<any[]>([]);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   
   const chatPartner = userId ? findUserById(userId) : null;
@@ -106,6 +108,7 @@ export const ChatPage: React.FC = () => {
                   size="sm"
                   className="rounded-full p-2"
                   aria-label="Video call"
+                  onClick={() => setIsVideoModalOpen(true)}
                 >
                   <Video size={18} />
                 </Button>
@@ -178,6 +181,13 @@ export const ChatPage: React.FC = () => {
                 </Button>
               </form>
             </div>
+            
+            <VideoCallModal 
+              isOpen={isVideoModalOpen} 
+              onClose={() => setIsVideoModalOpen(false)} 
+              partner={chatPartner} 
+              currentUser={currentUser} 
+            />
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center p-4">

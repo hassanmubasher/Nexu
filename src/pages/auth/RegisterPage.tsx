@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, CircleDollarSign, Building2, AlertCircle } from 'lucide-react';
+import { User, Mail, Lock, Shield, CircleDollarSign, Building2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -18,6 +18,28 @@ export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
   
+  // Calculate password strength
+  const calculateStrength = (pass: string) => {
+    let score = 0;
+    if (!pass) return score;
+    if (pass.length > 8) score += 1;
+    if (/[A-Z]/.test(pass)) score += 1;
+    if (/[0-9]/.test(pass)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+    return score;
+  };
+
+  const getStrengthData = () => {
+    const score = calculateStrength(password);
+    if (!password) return { color: 'bg-gray-200', label: '', width: 'w-0' };
+    if (score <= 1) return { color: 'bg-error-500', label: 'Weak', width: 'w-1/4' };
+    if (score === 2) return { color: 'bg-warning-500', label: 'Fair', width: 'w-2/4' };
+    if (score === 3) return { color: 'bg-primary-500', label: 'Good', width: 'w-3/4' };
+    return { color: 'bg-success-500', label: 'Strong', width: 'w-full' };
+  };
+
+  const strength = getStrengthData();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -122,15 +144,35 @@ export const RegisterPage: React.FC = () => {
               startAdornment={<Mail size={18} />}
             />
             
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              fullWidth
-              startAdornment={<Lock size={18} />}
-            />
+            <div>
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                fullWidth
+                startAdornment={<Lock size={18} />}
+              />
+              {/* Password Strength Meter */}
+              {password && (
+                <div className="mt-2 animate-fade-in">
+                  <div className="flex justify-between items-center mb-1 text-xs">
+                    <span className="text-gray-500 flex items-center gap-1">
+                      <Shield size={12} /> Strength
+                    </span>
+                    <span className={`font-medium ${strength.color.replace('bg-', 'text-')}`}>
+                      {strength.label}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full ${strength.color} transition-all duration-300 ease-out ${strength.width}`}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
             
             <Input
               label="Confirm password"

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle } from 'lucide-react';
+import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle, Wallet, ArrowRight } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -9,13 +9,17 @@ import { InvestorCard } from '../../components/investor/InvestorCard';
 import { useAuth } from '../../context/AuthContext';
 import { CollaborationRequest } from '../../types';
 import { getRequestsForEntrepreneur } from '../../data/collaborationRequests';
+import { useMeetingStore } from '../../store/useMeetingStore';
+import { UpcomingMeetings } from '../../components/dashboard/UpcomingMeetings';
 import { investors } from '../../data/users';
-
 export const EntrepreneurDashboard: React.FC = () => {
   const { user } = useAuth();
   const [collaborationRequests, setCollaborationRequests] = useState<CollaborationRequest[]>([]);
-  const [recommendedInvestors, setRecommendedInvestors] = useState(investors.slice(0, 3));
+  const [recommendedInvestors] = useState(investors.slice(0, 3));
   
+  const { events } = useMeetingStore();
+  const upcomingCount = events.filter(e => e.status === 'confirmed').length;
+
   useEffect(() => {
     if (user) {
       // Load collaboration requests
@@ -23,7 +27,7 @@ export const EntrepreneurDashboard: React.FC = () => {
       setCollaborationRequests(requests);
     }
   }, [user]);
-  
+
   const handleRequestStatusUpdate = (requestId: string, status: 'accepted' | 'rejected') => {
     setCollaborationRequests(prevRequests => 
       prevRequests.map(req => 
@@ -85,18 +89,20 @@ export const EntrepreneurDashboard: React.FC = () => {
           </CardBody>
         </Card>
         
-        <Card className="bg-accent-50 border border-accent-100">
-          <CardBody>
-            <div className="flex items-center">
-              <div className="p-3 bg-accent-100 rounded-full mr-4">
-                <Calendar size={20} className="text-accent-700" />
+        <Card className="bg-accent-50 border border-accent-100 cursor-pointer hover:bg-accent-100 transition-colors">
+          <Link to="/schedule">
+            <CardBody>
+              <div className="flex items-center">
+                <div className="p-3 bg-accent-100 rounded-full mr-4">
+                  <Calendar size={20} className="text-accent-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-accent-700">Upcoming Meetings</p>
+                  <h3 className="text-xl font-semibold text-accent-900">{upcomingCount}</h3>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-accent-700">Upcoming Meetings</p>
-                <h3 className="text-xl font-semibold text-accent-900">2</h3>
-              </div>
-            </div>
-          </CardBody>
+            </CardBody>
+          </Link>
         </Card>
         
         <Card className="bg-success-50 border border-success-100">
@@ -147,8 +153,28 @@ export const EntrepreneurDashboard: React.FC = () => {
           </Card>
         </div>
         
-        {/* Recommended investors */}
-        <div className="space-y-4">
+        {/* Recommended investors & Meetings & Wallet */}
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-br from-gray-900 to-gray-800 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-5 blur-2xl"></div>
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                   <Wallet size={20} className="text-primary-300" />
+                   <h3 className="font-medium text-white">Wallet Balance</h3>
+                </div>
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">$45,000.00</h2>
+              </div>
+              <Link to="/payments" className="mt-4 flex items-center text-sm text-primary-300 hover:text-primary-200 transition-colors">
+                Manage Funds <ArrowRight size={16} className="ml-1" />
+              </Link>
+            </CardBody>
+          </Card>
+
+          <UpcomingMeetings />
+
           <Card>
             <CardHeader className="flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">Recommended Investors</h2>

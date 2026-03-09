@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, PieChart, Filter, Search, PlusCircle } from 'lucide-react';
+import { Users, PieChart, Filter, Search, PlusCircle, Calendar, Wallet, ArrowRight } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { EntrepreneurCard } from '../../components/entrepreneur/EntrepreneurCard';
 import { useAuth } from '../../context/AuthContext';
-import { Entrepreneur } from '../../types';
 import { entrepreneurs } from '../../data/users';
 import { getRequestsFromInvestor } from '../../data/collaborationRequests';
-
+import { useMeetingStore } from '../../store/useMeetingStore';
+import { UpcomingMeetings } from '../../components/dashboard/UpcomingMeetings';
 export const InvestorDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { events } = useMeetingStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   
@@ -20,7 +21,8 @@ export const InvestorDashboard: React.FC = () => {
   
   // Get collaboration requests sent by this investor
   const sentRequests = getRequestsFromInvestor(user.id);
-  const requestedEntrepreneurIds = sentRequests.map(req => req.entrepreneurId);
+  
+  const upcomingCount = events.filter(e => e.status === 'confirmed').length;
   
   // Filter entrepreneurs based on search and industry filters
   const filteredEntrepreneurs = entrepreneurs.filter(entrepreneur => {
@@ -86,14 +88,17 @@ export const InvestorDashboard: React.FC = () => {
             
             <div className="flex flex-wrap gap-2">
               {industries.map(industry => (
-                <Badge
-                  key={industry}
-                  variant={selectedIndustries.includes(industry) ? 'primary' : 'gray'}
-                  className="cursor-pointer"
+                <span 
+                  key={industry} 
                   onClick={() => toggleIndustry(industry)}
+                  className="cursor-pointer inline-block"
                 >
-                  {industry}
-                </Badge>
+                  <Badge
+                    variant={selectedIndustries.includes(industry) ? 'primary' : 'gray'}
+                  >
+                    {industry}
+                  </Badge>
+                </span>
               ))}
             </div>
           </div>
@@ -101,7 +106,7 @@ export const InvestorDashboard: React.FC = () => {
       </div>
       
       {/* Stats summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-primary-50 border border-primary-100">
           <CardBody>
             <div className="flex items-center">
@@ -145,24 +150,42 @@ export const InvestorDashboard: React.FC = () => {
             </div>
           </CardBody>
         </Card>
+        
+        <Card className="bg-success-50 border border-success-100 hover:bg-success-100 transition-colors cursor-pointer">
+          <Link to="/schedule">
+            <CardBody>
+              <div className="flex items-center">
+                <div className="p-3 bg-success-100 rounded-full mr-4">
+                  <Calendar size={20} className="text-success-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-success-700">Upcoming Meetings</p>
+                  <h3 className="text-xl font-semibold text-success-900">{upcomingCount}</h3>
+                </div>
+              </div>
+            </CardBody>
+          </Link>
+        </Card>
       </div>
       
-      {/* Entrepreneurs grid */}
-      <div>
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-medium text-gray-900">Featured Startups</h2>
-          </CardHeader>
-          
-          <CardBody>
-            {filteredEntrepreneurs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEntrepreneurs.map(entrepreneur => (
-                  <EntrepreneurCard
-                    key={entrepreneur.id}
-                    entrepreneur={entrepreneur}
-                  />
-                ))}
+      {/* Main Content & Sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          {/* Entrepreneurs grid */}
+          <Card className="h-full">
+            <CardHeader>
+              <h2 className="text-lg font-medium text-gray-900">Featured Startups</h2>
+            </CardHeader>
+            
+            <CardBody>
+              {filteredEntrepreneurs.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {filteredEntrepreneurs.map(entrepreneur => (
+                    <EntrepreneurCard
+                      key={entrepreneur.id}
+                      entrepreneur={entrepreneur}
+                    />
+                  ))}
               </div>
             ) : (
               <div className="text-center py-8">
@@ -181,6 +204,29 @@ export const InvestorDashboard: React.FC = () => {
             )}
           </CardBody>
         </Card>
+        </div>
+        
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-br from-gray-900 to-gray-800 text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-5 blur-2xl"></div>
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                   <Wallet size={20} className="text-primary-300" />
+                   <h3 className="font-medium text-white">Available Capital</h3>
+                </div>
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">$1,250,000.00</h2>
+              </div>
+              <Link to="/payments" className="mt-4 flex items-center text-sm text-primary-300 hover:text-primary-200 transition-colors">
+                Manage Funds <ArrowRight size={16} className="ml-1" />
+              </Link>
+            </CardBody>
+          </Card>
+
+          <UpcomingMeetings />
+        </div>
       </div>
     </div>
   );
